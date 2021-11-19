@@ -1,0 +1,110 @@
+{{- if .Values.mockServer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "chart.name" . }}-mock-server
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ template "chart.name" . }}-mock-server
+    chart: {{ template "chart.name_version" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.mockServer.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "chart.name" . }}-mock-server
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      {{- if .Values.mockServer.podAnnotations }}
+      # Allows custom annotations to be specified
+      annotations:
+      {{ toYaml .Values.mockServer.podAnnotations | indent 8 }}
+      {{- end }}
+      name: {{ template "chart.name" . }}-mock-server
+      labels:
+        app: {{ template "chart.name" . }}-mock-server
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ template "chart.name" . }}-mock-server
+          image: {{ .Values.mockServer.image.repository }}
+          imagePullPolicy: {{ .Values.mockServer.image.pullPolicy }}
+          securityContext:
+            runAsUser: 65534 # nonroot
+            readOnlyRootFilesystem: {{ .Values.mockServer.app.readOnlyRootFilesystem }}
+          ports:
+            - name: serviceport
+              containerPort: {{ .Values.mockServer.app.serverPort }}
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: serviceport
+            initialDelaySeconds: 2
+            periodSeconds: 2
+            successThreshold: 1
+            failureThreshold: 10
+          livenessProbe:
+            tcpSocket:
+              port: serviceport
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 10
+          env:
+            - name: LOG_LEVEL
+              value: {{ .Values.mockServer.app.logLevel | quote }}
+            - name: SERVER_PORT
+              value: {{ .Values.mockServer.app.serverPort | quote }}
+            {{- if .Values.mockServer.app.proxyRemoteHost }}
+            - name: PROXY_REMOTE_HOST
+              value: {{ .Values.mockServer.app.proxyRemoteHost | quote }}
+            {{- end }}
+            {{- if .Values.mockServer.app.proxyRemotePort }}
+            - name: PROXY_REMOTE_PORT
+              value: {{ .Values.mockServer.app.proxyRemotePort | quote }}
+            {{- end }}
+            {{- if .Values.mockServer.app.jvmOptions }}
+            - name: JVM_OPTIONS
+              value: {{ .Values.mockServer.app.jvmOptions | quote }}
+            {{- end }}
+            {{- if .Values.mockServer.app.mountConfigMap }}
+            - name: MOCKSERVER_PROPERTY_FILE
+              value: /config/{{ .Values.mockServer.app.propertiesFileName }}
+            {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            - name: libs-volume
+              mountPath: /libs
+          {{- if .Values.mockServer.resources }}
+          resources:
+          {{ toYaml .Values.mockServer.resources | indent 12 }}
+          {{- end }}
+      {{- with .Values.mockServer.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ .Values.mockServer.app.mountedConfigMapName }}
+            optional: true
+        - name: libs-volume
+          configMap:
+            name: {{ .Values.mockServer.app.mountedLibsConfigMapName }}
+            optional: true
+      {{- with .Values.mockServer.nodeSelector }}
+      nodeSelector:
+      {{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.mockServer.affinity }}
+      affinity:
+      {{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.mockServer.tolerations }}
+      tolerations:
+      {{ toYaml . | indent 8 }}
+      {{- end }}
+{{- end }}

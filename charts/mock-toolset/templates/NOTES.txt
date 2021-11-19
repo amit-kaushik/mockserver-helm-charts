@@ -1,0 +1,52 @@
+
+1. To wait until the deployment is complete run:
+
+   kubectl rollout status deployments {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+2. To check the status of the deployment without waiting, run the following command and confirm the `mockserver` has the `Running` status:
+
+   kubectl get po -l release={{ .Release.Name }} -n {{ .Release.Namespace }}
+
+3. Get the application URL by running these commands:
+{{- if and (.Values.mockServer.enabled) (.Values.mockServer.ingress.enabled) }}
+   {{- range .Values.mockServer.ingress.hosts }}
+       http{{ if $.Values.mockServer.ingress.tls }}s{{ end }}://{{ . }}{{ $.Values.mockServer.ingress.path }}
+   {{- end }}
+{{- else if and (.Values.mockServer.enabled) (contains "NodePort" .Values.mockServer.service.type) }}
+
+   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ template "chart.fullname" . }}-mock-server)
+   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+   export MOCKSERVER_HOST=$NODE_IP:$NODE_PORT
+   echo http://$MOCKSERVER_HOST
+
+   OR
+
+   kubectl -n mockserver port-forward svc/mockserver 1080:1080 &
+   export MOCKSERVER_HOST=127.0.0.1:1080
+   echo http://$MOCKSERVER_HOST
+{{- else if and (.Values.mockServer.enabled) ( contains "LoadBalancer" .Values.mockServer.service.type) }}
+
+   NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+         You can watch the status of by running 'kubectl get svc -w {{ template "chart.name" . }}-mock-server'
+   export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ template "chart.fullname" . }}-mock-server -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+   export MOCKSERVER_HOST=$SERVICE_IP:{{ .Values.mockServer.service.port }}
+   echo http://$MOCKSERVER_HOST
+
+   OR
+
+   kubectl -n mockserver port-forward svc/mockserver 1080:1080 &
+   export MOCKSERVER_HOST=127.0.0.1:1080
+   echo http://$MOCKSERVER_HOST
+{{- else if and (.Values.mockServer.enabled) (contains "ClusterIP" .Values.mockServer.service.type) }}
+
+   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app={{ template "chart.name" . }}-mock-server,release={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+   kubectl port-forward $POD_NAME {{ .Values.mockServer.service.port }}:{{ .Values.mockServer.service.port }} -n {{ .Release.Namespace }} &
+   sleep 1 && export MOCKSERVER_HOST=127.0.0.1:{{ .Values.mockServer.service.port }}
+   echo http://$MOCKSERVER_HOST
+
+   OR
+
+   kubectl -n mockserver port-forward svc/mockserver 1080:1080 &
+   export MOCKSERVER_HOST=127.0.0.1:1080
+   echo http://$MOCKSERVER_HOST
+{{- end }}

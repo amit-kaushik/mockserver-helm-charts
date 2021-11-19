@@ -1,0 +1,13 @@
+apiVersion: v2
+version: '0.0.1'
+name: mock-toolset
+description: Chart to deploy mock tools into kubernetes cluster
+keywords:
+  - mocking
+  - mock-server
+  - http-mock
+  - test-server
+  - http-proxy
+  - socks-proxy
+  - https-proxy
+icon: http://mock-server.com/apple-touch-icon.png

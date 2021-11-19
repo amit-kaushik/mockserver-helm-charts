@@ -1,0 +1,64 @@
+mockServer:
+  enabled: false
+  replicaCount: 1
+
+  app:
+    jvmOptions: nil
+    logLevel: "INFO"
+    mountConfigMap: false
+    mountedConfigMapName: "mockserver-config"
+    mountedLibsConfigMapName: "mockserver-config"
+    propertiesFileName: "mockserver.properties"
+    proxyRemoteHost: nil
+    proxyRemotePort: nil
+    readOnlyRootFilesystem: false
+    serverPort: "1080"
+
+
+  image:
+    repository: 'quay.io/procoredevops/mockserver:latest'
+    pullPolicy: Always
+
+  imagePullSecrets: []
+
+  service:
+    annotations: {}
+    clusterIP: ""
+    externalIPs: []
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    type: ClusterIP
+    port: 1080
+    nodePort: ""
+
+  ingress:
+    enabled: false
+    annotations: {}
+    path: /
+    hosts:
+      - mockserver.local
+    tls: []
+
+  podAnnotations: {}
+
+  resources: {}
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+
+localStack:
+  enabled: false
+
+  podAnnotations: { }
+
+  resources: { }
+
+  nodeSelector: { }
+
+  tolerations: [ ]
+
+  affinity: { }

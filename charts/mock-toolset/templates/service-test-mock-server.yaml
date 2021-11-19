@@ -1,0 +1,20 @@
+{{- if .Values.mockServer.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ template "chart.fullname" . }}-mock-server-service-test
+  labels:
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+    chart: {{ template "chart.name_version" . }}
+    app: {{ template "chart.name" . }}-mock-server
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: curl
+      image: radial/busyboxplus:curl
+      command: ['curl']
+      args: ['-v', '-s', '-X', 'PUT', '{{ template "chart.fullname" . }}-mock-server:{{ .Values.mockServer.service.port }}/status']
+  restartPolicy: Never
+{{- end}}

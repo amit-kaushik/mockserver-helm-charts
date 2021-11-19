@@ -1,0 +1,40 @@
+{{- if .Values.mockServer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "chart.fullname" . }}-mock-server
+  {{- if .Values.mockServer.service.annotations }}
+  annotations:
+  {{ toYaml .Values.mockServer.service.annotations | indent 4 }}
+  {{- end }}
+  labels:
+    app: {{ template "chart.name" . }}-mock-server
+    chart: {{ template "chart.name_version" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.mockServer.service.type }}
+  clusterIP: "{{ .Values.mockServer.service.clusterIP }}"
+  {{- if .Values.mockServer.service.externalIPs }}
+  externalIPs:
+  {{ toYaml .Values.mockServer.service.externalIPs | indent 4 }}
+  {{- end }}
+  {{- if .Values.mockServer.service.loadBalancerIP }}
+  loadBalancerIP: "{{ .Values.mockServer.service.loadBalancerIP }}"
+  {{- end }}
+  {{- if .Values.mockServer.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+  {{ toYaml .Values.mockServer.service.loadBalancerSourceRanges | indent 4 }}
+  {{- end }}
+  ports:
+    - name: serviceport
+      port: {{ .Values.mockServer.service.port }}
+      protocol: TCP
+      targetPort: serviceport
+      {{- if (and (eq .Values.mockServer.service.type "NodePort") (not (empty .Values.mockServer.service.nodePort))) }}
+      nodePort: {{ .Values.mockServer.service.nodePort }}
+      {{- end }}
+  selector:
+    app: {{ template "chart.name" . }}-mock-server
+    release: {{ .Release.Name }}
+{{- end}}
